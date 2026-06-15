@@ -69,28 +69,3 @@ jobs:
           echo "kubectl set image deployment/frontend frontend=${{ env.FRONTEND_IMG }}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
-  # ─── Job 2: 更新 K8s Deployment ─────────────────────
-  update-k8s:
-    name: Update K8s Deployment
-    runs-on: ubuntu-latest
-    needs: build-and-push
-    # 需要提前在 GitHub Secrets 中配置 KUBE_CONFIG（base64 编码的 kubeconfig）
-    if: secrets.KUBE_CONFIG != ''
-
-    steps:
-      - name: 配置 kubectl
-        run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
-          chmod 600 ~/.kube/config
-
-      - name: 更新 Backend Deployment 镜像
-        run: |
-          kubectl set image deployment/backend \
-            backend=${{ env.BACKEND_IMG }}:${{ github.sha }} \
-            --record
-
-      - name: 验证更新结果
-        run: |
-          kubectl rollout status deployment/backend
-          kubectl get deployment/backend -o wide
