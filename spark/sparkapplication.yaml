@@ -1,0 +1,24 @@
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: pyspark-analysis
+  namespace: default
+spec:
+  type: Python
+  pythonVersion: "3"
+  mode: cluster
+  image: swr.cn-north-4.myhuaweicloud.com/yxl2023112462/pyspark:3.4
+  mainApplicationFile: local:///opt/spark/work/analysis.py
+  sparkVersion: "3.4.0"
+  restartPolicy:
+    type: Never
+  driver:
+    cores: 1
+    coreRequest: "100m"
+    memory: "512m"
+    serviceAccount: spark
+  executor:
+    cores: 1
+    coreRequest: "100m"
+    instances: 1
+    memory: "512m"

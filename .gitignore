@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+
+# OS
+*.DS_Store
+Thumbs.db
+
+# Large data
+douban_movies.csv
+douban_movies_clean.csv
+
+# Kubernetes configs (sensitive)
+*kubeconfig*
+*.kubeconfig
+
+# Docker
+.docker/
+
+# IDE
+.vscode/
+.idea/
