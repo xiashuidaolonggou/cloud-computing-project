@@ -10,8 +10,6 @@ on:
 
 env:
   SWR_REGISTRY: swr.cn-north-4.myhuaweicloud.com
-  BACKEND_IMG: swr.cn-north-4.myhuaweicloud.com/yxl2023112462/backend
-  FRONTEND_IMG: swr.cn-north-4.myhuaweicloud.com/yxl2023112462/frontend
 
 jobs:
   build-and-push:
@@ -23,18 +21,23 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 登录华为云 SWR
+        env:
+          SWR_AK: ${{ secrets.SWR_AK }}
+          SWR_SK: ${{ secrets.SWR_SK }}
         run: |
-          echo "${{ secrets.SWR_SK }}" | docker login \
-            -u cn-north-4@${{ secrets.SWR_AK }} \
+          echo "$SWR_SK" | docker login \
+            -u "cn-north-4@$SWR_AK" \
             --password-stdin \
-            ${{ env.SWR_REGISTRY }}
+            "${{ env.SWR_REGISTRY }}"
 
       - name: 构建并推送 Backend
         run: |
-          docker build -t ${{ env.BACKEND_IMG }}:latest -t ${{ env.BACKEND_IMG }}:${{ github.sha }} ./backend
-          docker push ${{ env.BACKEND_IMG }} --all-tags
+          IMG="${{ env.SWR_REGISTRY }}/yxl2023112462/backend"
+          docker build -t "$IMG:latest" -t "$IMG:${{ github.sha }}" ./backend
+          docker push "$IMG" --all-tags
 
       - name: 构建并推送 Frontend
         run: |
-          docker build -t ${{ env.FRONTEND_IMG }}:latest -t ${{ env.FRONTEND_IMG }}:${{ github.sha }} ./frontend
-          docker push ${{ env.FRONTEND_IMG }} --all-tags
+          IMG="${{ env.SWR_REGISTRY }}/yxl2023112462/frontend"
+          docker build -t "$IMG:latest" -t "$IMG:${{ github.sha }}" ./frontend
+          docker push "$IMG" --all-tags
