@@ -8,10 +8,6 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [main]
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - 'k8s/**'
 
 env:
   SWR_REGISTRY: swr.cn-north-4.myhuaweicloud.com
