@@ -1,7 +1,6 @@
 # ==========================================================
-# CI/CD Pipeline - 自动构建镜像 → 推送 SWR → 更新 K8s
+# CI/CD Pipeline - 自动构建镜像 → 推送 SWR
 # 云计算课程设计 附加题2
-# 触发条件：推送 main 分支且修改 backend/frontend/k8s 目录
 # ==========================================================
 name: CI/CD Pipeline
 
@@ -11,57 +10,31 @@ on:
 
 env:
   SWR_REGISTRY: swr.cn-north-4.myhuaweicloud.com
-  SWR_ORG: yxl2023112462
   BACKEND_IMG: swr.cn-north-4.myhuaweicloud.com/yxl2023112462/backend
   FRONTEND_IMG: swr.cn-north-4.myhuaweicloud.com/yxl2023112462/frontend
 
 jobs:
-  # ─── Job 1: 构建并推送镜像 ──────────────────────────
   build-and-push:
     name: Build & Push to SWR
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout 代码
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 登录华为云 SWR 镜像仓库
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.SWR_REGISTRY }}
-          username: cn-north-4@${{ secrets.SWR_AK }}
-          password: ${{ secrets.SWR_SK }}
-
-      - name: 构建并推送 Backend 镜像
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          push: true
-          tags: |
-            ${{ env.BACKEND_IMG }}:latest
-            ${{ env.BACKEND_IMG }}:${{ github.sha }}
-
-      - name: 构建并推送 Frontend 镜像
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          push: true
-          tags: |
-            ${{ env.FRONTEND_IMG }}:latest
-            ${{ env.FRONTEND_IMG }}:${{ github.sha }}
-
-      - name: 输出构建结果
+      - name: 登录华为云 SWR
         run: |
-          echo "## ✅ CI/CD Pipeline 执行成功" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| 镜像 | Tag | 状态 |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|-----|------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Backend | \`${{ github.sha }}\` / \`latest\` | ✅ 已推送 |" >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend | \`${{ github.sha }}\` / \`latest\` | ✅ 已推送 |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 更新 K8s Deployment 命令" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "kubectl set image deployment/backend backend=${{ env.BACKEND_IMG }}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "kubectl set image deployment/frontend frontend=${{ env.FRONTEND_IMG }}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "${{ secrets.SWR_SK }}" | docker login \
+            -u cn-north-4@${{ secrets.SWR_AK }} \
+            --password-stdin \
+            ${{ env.SWR_REGISTRY }}
 
+      - name: 构建并推送 Backend
+        run: |
+          docker build -t ${{ env.BACKEND_IMG }}:latest -t ${{ env.BACKEND_IMG }}:${{ github.sha }} ./backend
+          docker push ${{ env.BACKEND_IMG }} --all-tags
+
+      - name: 构建并推送 Frontend
+        run: |
+          docker build -t ${{ env.FRONTEND_IMG }}:latest -t ${{ env.FRONTEND_IMG }}:${{ github.sha }} ./frontend
+          docker push ${{ env.FRONTEND_IMG }} --all-tags
