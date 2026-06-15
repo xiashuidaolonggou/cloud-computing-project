@@ -1,5 +1,5 @@
 # ==========================================================
-# CI/CD Pipeline - 自动构建镜像 → 推送 SWR
+# CI/CD Pipeline - 自动构建镜像（因 SWR IP 限制，推送手动）
 # 云计算课程设计 附加题2
 # ==========================================================
 name: CI/CD Pipeline
@@ -8,36 +8,30 @@ on:
   push:
     branches: [main]
 
-env:
-  SWR_REGISTRY: swr.cn-north-4.myhuaweicloud.com
-
 jobs:
-  build-and-push:
-    name: Build & Push to SWR
+  build:
+    name: Build Docker Images
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 登录华为云 SWR
-        env:
-          SWR_AK: ${{ secrets.SWR_AK }}
-          SWR_SK: ${{ secrets.SWR_SK }}
-        run: |
-          echo "$SWR_SK" | docker login \
-            -u "cn-north-4@$SWR_AK" \
-            --password-stdin \
-            "${{ env.SWR_REGISTRY }}"
+      - name: 构建 Backend 镜像
+        run: docker build -t backend:latest ./backend
 
-      - name: 构建并推送 Backend
-        run: |
-          IMG="${{ env.SWR_REGISTRY }}/yxl2023112462/backend"
-          docker build -t "$IMG:latest" -t "$IMG:${{ github.sha }}" ./backend
-          docker push "$IMG" --all-tags
+      - name: 构建 Frontend 镜像
+        run: docker build -t frontend:latest ./frontend
 
-      - name: 构建并推送 Frontend
+      - name: 验证镜像
         run: |
-          IMG="${{ env.SWR_REGISTRY }}/yxl2023112462/frontend"
-          docker build -t "$IMG:latest" -t "$IMG:${{ github.sha }}" ./frontend
-          docker push "$IMG" --all-tags
+          echo "✅ 镜像构建成功！"
+          docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}"
+          echo ""
+          echo "--- 准备推送至 SWR ---"
+          echo "推送命令（CloudShell 中执行）："
+          echo "  docker tag backend:latest swr.cn-north-4.myhuaweicloud.com/yxl2023112462/backend:latest"
+          echo "  docker tag frontend:latest swr.cn-north-4.myhuaweicloud.com/yxl2023112462/frontend:latest"
+          echo "  docker login -u cn-north-4@AK -p SK swr.cn-north-4.myhuaweicloud.com"
+          echo "  docker push swr.cn-north-4.myhuaweicloud.com/yxl2023112462/backend --all-tags"
+          echo "  docker push swr.cn-north-4.myhuaweicloud.com/yxl2023112462/frontend --all-tags"
